@@ -90,7 +90,7 @@ def run_comparison() -> None:
 
 # GUI setup
 root = tk.Tk()
-root.title("PDF Text Comparison")
+root.title("Text Comparison by HelpDesk8675")
 
 # Source File
 source_label = tk.Label(root, text="Source PDF (Optional):")
