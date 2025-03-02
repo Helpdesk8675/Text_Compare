@@ -1,3 +1,5 @@
+# double check your work
+
 import os
 import shutil
 from tkinter import Tk, filedialog, messagebox, Label, Button, Entry
