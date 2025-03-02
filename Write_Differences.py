@@ -155,7 +155,7 @@ def run():
 # ----------------------- GUI Layout -----------------------
 
 root = Tk()
-root.title("Compare and Highlight Tool")
+root.title("Write_Differences by HelpDesk8675")
 
 Label(root, text="File 1 (DOCX, PDF, TXT)").grid(row=0, column=0, sticky="w", padx=5, pady=5)
 file1_entry = Entry(root, width=50)
