@@ -1,7 +1,6 @@
-# double check your work
-
 import os
 import shutil
+import re
 from tkinter import Tk, filedialog, messagebox, Label, Button, Entry
 from collections import Counter
 from docx import Document
@@ -9,17 +8,23 @@ from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 import PyPDF2
 
-# Common stop words list
+# Common stop words (expand if needed)
 STOP_WORDS = {
-    "the", "and", "a", "an", "of", "in", "on", "at", "to", "for", "with", "is", "it", "by", "this", "that", "from"
+    "the", "and", "a", "an", "of", "in", "on", "at", "to", "for", "with", 
+    "is", "it", "by", "this", "that", "from", "as", "but", "or"
 }
 
+# Clean a word to remove control characters or null bytes
+def clean_word(word):
+    return re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', word)
+
+# Read text from different file formats
 def extract_text(file_path):
     ext = os.path.splitext(file_path)[1].lower()
 
     if ext == '.docx':
         doc = Document(file_path)
-        return [word for para in doc.paragraphs for word in para.text.split()]
+        return [clean_word(word) for para in doc.paragraphs for word in para.text.split()]
 
     elif ext == '.pdf':
         words = []
@@ -28,19 +33,21 @@ def extract_text(file_path):
             for page in reader.pages:
                 text = page.extract_text()
                 if text:
-                    words.extend(text.split())
+                    words.extend(clean_word(word) for word in text.split())
         return words
 
     elif ext == '.txt':
-        with open(file_path, 'r', encoding='utf-8') as file:
-            return [word for line in file for word in line.split()]
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+            return [clean_word(word) for line in file for word in line.split()]
 
     else:
         raise ValueError(f"Unsupported file type: {ext}")
 
+# Normalize words for matching (lowercase + strip punctuation)
 def normalize_word(word):
     return word.lower().strip(".,!?()[]{}\"'")
 
+# Highlight common words in DOCX
 def highlight_text_in_docx(docx_path, common_words, output_path):
     doc = Document(docx_path)
 
@@ -56,6 +63,7 @@ def highlight_text_in_docx(docx_path, common_words, output_path):
 
     doc.save(output_path)
 
+# Convert PDF or TXT to DOCX
 def convert_to_docx(input_path, output_path):
     ext = os.path.splitext(input_path)[1].lower()
 
@@ -67,15 +75,16 @@ def convert_to_docx(input_path, output_path):
             for page in reader.pages:
                 text = page.extract_text()
                 if text:
-                    doc.add_paragraph(text)
+                    doc.add_paragraph(clean_word(text))
 
     elif ext == '.txt':
-        with open(input_path, 'r', encoding='utf-8') as file:
+        with open(input_path, 'r', encoding='utf-8', errors='ignore') as file:
             for line in file:
-                doc.add_paragraph(line.strip())
+                doc.add_paragraph(clean_word(line.strip()))
 
     doc.save(output_path)
 
+# Save report listing matched words and counts
 def save_comparison_report(output_folder, common_words_counter):
     report_path = os.path.join(output_folder, "comparison_report.txt")
     with open(report_path, 'w', encoding='utf-8') as report_file:
@@ -85,11 +94,12 @@ def save_comparison_report(output_folder, common_words_counter):
             report_file.write(f"{word}: {count}\n")
     return report_path
 
+# Core comparison logic
 def run_comparison(file1, file2, output_folder):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    # Extract text and normalize
+    # Extract, clean, normalize, and filter
     words1 = extract_text(file1)
     words2 = extract_text(file2)
 
@@ -99,10 +109,10 @@ def run_comparison(file1, file2, output_folder):
     # Find common words
     common_words = set(normalized1).intersection(set(normalized2))
 
-    # Count common words for report
+    # Count occurrences for the report
     common_words_counter = Counter(word for word in normalized1 if word in common_words)
 
-    # Prepare output file name (file1-compared.docx)
+    # Prepare output filename
     base_name = os.path.splitext(os.path.basename(file1))[0]
     compared_file = os.path.join(output_folder, f"{base_name}-compared.docx")
 
@@ -112,15 +122,15 @@ def run_comparison(file1, file2, output_folder):
     else:
         convert_to_docx(file1, compared_file)
 
-    # Highlight common words in the output DOCX
+    # Highlight common words in DOCX
     highlight_text_in_docx(compared_file, common_words, compared_file)
 
-    # Save comparison report
-    report_path = save_comparison_report(output_folder, common_words_counter)
+    # Save the comparison report
+    report_file = save_comparison_report(output_folder, common_words_counter)
 
-    return compared_file, report_path
+    return compared_file, report_file
 
-# ----------------------- GUI Code -----------------------
+# ---------------- GUI Section ----------------
 
 def select_file1():
     file1_entry.delete(0, 'end')
@@ -148,14 +158,14 @@ def run():
 
     try:
         compared_file, report_file = run_comparison(file1, file2, output_folder)
-        messagebox.showinfo("Success", f"Comparison complete!\n\n- Highlighted DOCX: {compared_file}\n- Report: {report_file}")
+        messagebox.showinfo("Success", f"Comparison complete!\n\nHighlighted DOCX:\n{compared_file}\n\nReport:\n{report_file}")
     except Exception as e:
-        messagebox.showerror("Error", str(e))
+        messagebox.showerror("Error", f"An error occurred:\n{e}")
 
-# ----------------------- GUI Layout -----------------------
+# ---------------- GUI Layout ----------------
 
 root = Tk()
-root.title("Write_Differences by HelpDesk8675")
+root.title("Compare and Highlight Tool V0.2")
 
 Label(root, text="File 1 (DOCX, PDF, TXT)").grid(row=0, column=0, sticky="w", padx=5, pady=5)
 file1_entry = Entry(root, width=50)
