@@ -98,6 +98,14 @@ def save_comparison_report(output_folder, common_words_counter):
 def run_comparison(file1, file2, output_folder):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
+    # Create output folder name based on filenames
+    file1_name = os.path.splitext(os.path.basename(file1))[0]
+    file2_name = os.path.splitext(os.path.basename(file2))[0]
+    custom_output_folder = os.path.join(output_folder, f"{file1_name} - {file2_name}")
+
+    # Check if the folder already exists
+    if not os.path.exists(custom_output_folder):
+        os.makedirs(custom_output_folder)
 
     # Extract, clean, normalize, and filter
     words1 = extract_text(file1)
@@ -114,7 +122,7 @@ def run_comparison(file1, file2, output_folder):
 
     # Prepare output filename
     base_name = os.path.splitext(os.path.basename(file1))[0]
-    compared_file = os.path.join(output_folder, f"{base_name}-compared.docx")
+    compared_file = os.path.join(custom_output_folder, f"{base_name}-compared.docx")
 
     # Convert file1 to DOCX if needed
     if file1.endswith('.docx'):
@@ -126,8 +134,8 @@ def run_comparison(file1, file2, output_folder):
     highlight_text_in_docx(compared_file, common_words, compared_file)
 
     # Save the comparison report
-    report_file = save_comparison_report(output_folder, common_words_counter)
-
+    report_file = save_comparison_report(custom_output_folder, common_words_counter) 
+    
     return compared_file, report_file
 
 # ---------------- GUI Section ----------------
@@ -165,7 +173,7 @@ def run():
 # ---------------- GUI Layout ----------------
 
 root = Tk()
-root.title("Compare and Highlight Tool V0.2")
+root.title("Compare and Highlight Tool V0.3 by helpdesk8675")
 
 Label(root, text="File 1 (DOCX, PDF, TXT)").grid(row=0, column=0, sticky="w", padx=5, pady=5)
 file1_entry = Entry(root, width=50)
